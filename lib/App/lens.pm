@@ -1,16 +1,16 @@
-package App::chalk;
+package App::lens;
 
 # DATE
 # VERSION
 
 1;
-# ABSTRACT: Colorize text for terminal output
+# ABSTRACT: Transform colors in terminal output
 
 =head1 DESCRIPTION
 
-This distribution contains the script L<chalk>.
+This distribution contains the script L<lens>.
 
 
 =head1 SEE ALSO
 
-L<chalk>
+L<lens>
