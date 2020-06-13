@@ -1,6 +1,8 @@
 package App::lens;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 1;
@@ -8,7 +10,7 @@ package App::lens;
 
 =head1 DESCRIPTION
 
-This distribution contains the script L<lens>.
+See included script L<lens>.
 
 
 =head1 SEE ALSO

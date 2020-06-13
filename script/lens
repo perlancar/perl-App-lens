@@ -1,10 +1,12 @@
 #!perl
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
-use 5.010;
-use strict;
+use 5.010001;
+use strict 'subs', 'vars';
 use warnings;
 
 sub transform_bold {
@@ -65,23 +67,80 @@ sub transform_pastel {
     }
 }
 
-if (@ARGV != 1 || (grep {$_ eq '--help'} @ARGV)) {
+sub transform_ct {
+    state $ct_sub = do {
+        require Color::ANSI::Util;
+        require Color::RGB::Util;
+
+        my $mod = shift @ARGV;
+        $mod = "ColorTransform::$mod" unless $mod =~ /\AColorTransform::/;
+        (my $modpm = "$mod.pm") =~ s!::!/!g;
+        require $modpm;
+
+        \&{"$mod\::transform"};
+    };
+
+    my ($rgb, $is_bg);
+    if ($_[0] >= 30 && $_[0] <= 37) {
+        # ansi fg, 16 color
+        $rgb = Color::ANSI::Util::ansi16_to_rgb($_[0] - 30);
+    } elsif ($_[0] == 38 && $_[1] == 5) {
+        # ansi fg, 256 color
+        $rgb = Color::ANSI::Util::ansi256_to_rgb($_[2]);
+    } elsif ($_[0] == 38 && $_[1] == 2) {
+        # ansi fg, 24bit
+        $rgb = sprintf("%02x%02x%02x", $_[2], $_[3], $_[4]);
+    } elsif ($_[0] >= 40 && $_[0] <= 47) {
+        # ansi bg, 16 color
+        $is_bg++;
+        $rgb = Color::ANSI::Util::ansi16_to_rgb($_[0] - 40);
+    } elsif ($_[0] == 48 && $_[1] == 5) {
+        # ansi bg, 256 color
+        $is_bg++;
+        $rgb = Color::ANSI::Util::ansi256_to_rgb($_[2]);
+    } elsif ($_[0] == 48 && $_[1] == 2) {
+        # ansi bg, 24bit
+        $is_bg++;
+        $rgb = sprintf("%02x%02x%02x", $_[2], $_[3], $_[4]);
+    } else {
+        return @_;
+    }
+
+    # transform color
+    my $trgb = $ct_sub->(color=>$rgb, @ARGV);
+    my $code = $is_bg ? Color::ANSI::Util::ansibg($trgb) : Color::ANSI::Util::ansifg($trgb);
+    $code =~ s/\A\e\[//;
+    $code =~ s/m\z//;
+    split /;/, $code;
+}
+
+if (!@ARGV || (grep {$_ eq '--help'} @ARGV)) {
     print <<'EOF';
 lens - Transform colors in terminal output
 
 Usage:
-  % command-that-produces-colored-output | lens <transform-name>
+  % command-that-produces-colored-output | lens <transform-name> [transform-option]...
 
 List of available transforms:
-  mono - replace all colors with gray
-  nobold - remove bold
-  noop - do no transform
-  pastel - pastelize colors
+  bold    - Set bold to all colors
+  mono    - replace all colors with gray
+  nobold  - remove bold
+  noop    - do no transform
+  pastel  - pastelize colors
+  ct      - Use a ColorTransform::* module
+
+Some examples:
+
+ # Make ls output mono
+ % ls -l --color | lens mono
+
+ # Make the WWW color swatch into monotone (green)
+ % COLOR=1 show-color-swatch | lens ct Monotone hue 120
 
 EOF
     exit 0;
 } else {
-    my $tname = shift;
+    my $tname = shift @ARGV;
     defined &{"transform_$tname"} or die "Unknown transform '$tname'\n";
     my $tsub = \&{"transform_$tname"};
     my $transform = sub {
@@ -148,10 +207,24 @@ Do no transform.
 
 Pastelize colors.
 
+=item * ct
+
+Transform using one of ColorTransform::* modules.
+
 =back
+
+Some examples:
+
+ # Make ls output mono
+ % ls -l --color | lens mono
+
+ # Make the WWW color swatch into monotone (green)
+ % COLOR=1 show-color-swatch | lens ct Monotone hue 120
 
 
 =head1 DESCRIPTION
 
 
 =head1 SEE ALSO
+
+C<ColorTransform::*> modules
