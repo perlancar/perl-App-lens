@@ -1,3 +1,8 @@
+0.021   2020-06-13  Released-By: PERLANCAR; Urgency: medium
+
+	- [bugfix] Didn't handle ANSI color/SGR codes 90-97 & 100-107.
+
+
 0.020   2020-06-13  Released-By: PERLANCAR; Urgency: medium
 
 	- Add a transform 'ct' (use ColorTransform::* module).
