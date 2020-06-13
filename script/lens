@@ -27,9 +27,17 @@ sub transform_inverse {
 
 sub transform_mono {
     if ($_[0] >= 30 && $_[0] <= 38) {
+        # ansi fg
         return (37);
     } elsif ($_[0] >= 40 && $_[0] <= 48) {
+        # ansi bg
         return (47);
+    } elsif ($_[0] >= 90 && $_[0] <= 97) {
+        # bright ansi fg
+        return (1,37);
+    } elsif ($_[0] >= 100 && $_[0] <= 107) {
+        # bright ansi bg
+        return (1,47);
     } else {
         return @_;
     }
@@ -60,8 +68,13 @@ sub transform_pastel {
 
     if ($_[0] >= 30 && $_[0] <= 37) {
         return @{ $pastel_ansifgs->[$_[0]-30] };
+    } elsif ($_[0] >= 90 && $_[0] <= 97) {
+        # XXX bright
+        return @{ $pastel_ansifgs->[$_[0]-90] };
     } elsif ($_[0] >= 40 && $_[0] <= 47) {
         return  @{ $pastel_ansibgs->[$_[0]-40] };
+    } elsif ($_[0] >= 100 && $_[0] <= 107) {
+        return  @{ $pastel_ansibgs->[$_[0]-100] };
     } else {
         return @_;
     }
@@ -80,10 +93,14 @@ sub transform_ct {
         \&{"$mod\::transform"};
     };
 
-    my ($rgb, $is_bg);
+    my ($rgb, $is_bg, $is_bright);
     if ($_[0] >= 30 && $_[0] <= 37) {
         # ansi fg, 16 color
         $rgb = Color::ANSI::Util::ansi16_to_rgb($_[0] - 30);
+    } elsif ($_[0] >= 90 && $_[0] <= 97) {
+        # bright ansi fg, 16 color
+        $is_bright++;
+        $rgb = Color::ANSI::Util::ansi16_to_rgb($_[0] - 90);
     } elsif ($_[0] == 38 && $_[1] == 5) {
         # ansi fg, 256 color
         $rgb = Color::ANSI::Util::ansi256_to_rgb($_[2]);
@@ -94,6 +111,11 @@ sub transform_ct {
         # ansi bg, 16 color
         $is_bg++;
         $rgb = Color::ANSI::Util::ansi16_to_rgb($_[0] - 40);
+    } elsif ($_[0] >= 100 && $_[0] <= 107) {
+        # ansi bright bg, 16 color
+        $is_bright++;
+        $is_bg++;
+        $rgb = Color::ANSI::Util::ansi16_to_rgb($_[0] - 100);
     } elsif ($_[0] == 48 && $_[1] == 5) {
         # ansi bg, 256 color
         $is_bg++;
