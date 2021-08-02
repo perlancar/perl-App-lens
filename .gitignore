@@ -2,3 +2,4 @@ App-lens-*
 .build
 *~
 nytprof*
+.DS_Store
